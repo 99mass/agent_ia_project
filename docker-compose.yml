@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: unchk_db
+    environment:
+      POSTGRES_USER: unchk_admin
+      POSTGRES_PASSWORD: unchk_password
+      POSTGRES_DB: unchk_agent_ia
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    container_name: unchk_backend
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: db
+      DB_USER: unchk_admin
+      DB_PASSWORD: unchk_password
+      DB_NAME: unchk_agent_ia
+      JWT_SECRET: unchk-agent-ia-production-secret-2025
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  ai_agent:
+    build:
+      context: ./ai_agent
+    container_name: unchk_ai_agent
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db
+      DB_USER: unchk_admin
+      DB_PASSWORD: unchk_password
+      DB_NAME: unchk_agent_ia
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: unchk_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+      - ai_agent
+    restart: unless-stopped
+
+volumes:
+  pgdata:

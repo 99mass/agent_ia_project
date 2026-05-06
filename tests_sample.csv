@@ -1,0 +1,11 @@
+titre_test,description_test,domaine,niveau_cible,question_enonce,question_concept,question_points
+Test Prérequis Génie Logiciel,Évaluation initiale des concepts de base pour le Master 2 GL,Génie Logiciel,Master 2,Que signifie le sigle UML ?,UML,10
+Test Prérequis Génie Logiciel,Évaluation initiale des concepts de base pour le Master 2 GL,Génie Logiciel,Master 2,Quelle est la différence fondamentale entre une classe et un objet ?,POO,10
+Test Prérequis Génie Logiciel,Évaluation initiale des concepts de base pour le Master 2 GL,Génie Logiciel,Master 2,Quel modèle de cycle de vie est basé sur des itérations et incréments ?,Agile,10
+Test Prérequis Génie Logiciel,Évaluation initiale des concepts de base pour le Master 2 GL,Génie Logiciel,Master 2,Quel patron de conception garantit qu'une classe n'a qu'une seule instance ?,Design Patterns,15
+Test Prérequis Génie Logiciel,Évaluation initiale des concepts de base pour le Master 2 GL,Génie Logiciel,Master 2,Dans quel diagramme UML utilise-t-on des acteurs et des cas d'utilisation ?,UML,10
+Fondamentaux Bases de Données,Test sur les concepts de bases de données relationnelles,Bases de Données,Licence 3,Quelle commande SQL est utilisée pour ajouter de nouvelles données dans une base ?,SQL,10
+Fondamentaux Bases de Données,Test sur les concepts de bases de données relationnelles,Bases de Données,Licence 3,Que signifie ACID dans le contexte des transactions de base de données ?,Transactions,15
+Fondamentaux Bases de Données,Test sur les concepts de bases de données relationnelles,Bases de Données,Licence 3,Quelle est la différence entre une clé primaire et une clé étrangère ?,Modélisation Relationnelle,10
+Algorithmique Avancée,Test sur les structures de données et complexité,Algorithmique,Master 1,Quelle est la complexité en temps dans le pire des cas de l'algorithme Quicksort ?,Complexité,10
+Algorithmique Avancée,Test sur les structures de données et complexité,Algorithmique,Master 1,Quelle structure de données utilise le principe LIFO ?,Structures de Données,10
