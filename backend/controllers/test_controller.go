@@ -165,7 +165,7 @@ func CreateTest(c *gin.Context) {
 		Description: payload.Description,
 		Domaine:     payload.Domaine,
 		NiveauCible: payload.NiveauCible,
-		AuteurID:    uint(userID.(float64)),
+		AuteurID:    userID.(uint),
 	}
 
 	if err := config.DB.Create(&test).Error; err != nil {
@@ -227,7 +227,7 @@ func UpdateTest(c *gin.Context) {
 	// Verify authorization (only auteur or admin)
 	userID, _ := c.Get("user_id")
 	userRole, _ := c.Get("user_role")
-	if userRole != "admin" && uint(userID.(float64)) != test.AuteurID {
+	if userRole != "admin" && userID.(uint) != test.AuteurID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Vous n'êtes pas autorisé à modifier ce test"})
 		return
 	}
@@ -264,7 +264,7 @@ func DeleteTest(c *gin.Context) {
 	// Verify authorization
 	userID, _ := c.Get("user_id")
 	userRole, _ := c.Get("user_role")
-	if userRole != "admin" && uint(userID.(float64)) != test.AuteurID {
+	if userRole != "admin" && userID.(uint) != test.AuteurID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Vous n'êtes pas autorisé à supprimer ce test"})
 		return
 	}
@@ -286,7 +286,7 @@ func DeleteTest(c *gin.Context) {
 // ImportTestsCSV handles bulk import of tests and questions from a CSV file
 func ImportTestsCSV(c *gin.Context) {
 	userID, _ := c.Get("user_id")
-	authorID := uint(userID.(float64))
+	authorID := userID.(uint)
 
 	file, _, err := c.Request.FormFile("file")
 	if err != nil {
@@ -401,4 +401,32 @@ func ImportTestsCSV(c *gin.Context) {
 		"tests_created": len(testsCache),
 		"results":       results,
 	})
+}
+
+// GetRecommendations returns the recommendations for the logged-in student
+func GetRecommendations(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Non autorisé"})
+		return
+	}
+	studentID := userID.(uint)
+
+	var recommendations []models.Recommandation
+	if err := config.DB.Where("etudiant_id = ?", studentID).Preload("Ressource").Order("date_recommandation DESC").Find(&recommendations).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de récupérer les recommandations"})
+		return
+	}
+
+	c.JSON(http.StatusOK, recommendations)
+}
+
+// GetConcepts returns a list of unique concepts from the questions table
+func GetConcepts(c *gin.Context) {
+	var concepts []string
+	if err := config.DB.Model(&models.Question{}).Distinct("concept").Pluck("concept", &concepts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de récupérer les concepts"})
+		return
+	}
+	c.JSON(http.StatusOK, concepts)
 }

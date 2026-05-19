@@ -99,6 +99,13 @@ func SeedDatabase(db *gorm.DB) {
 		db.FirstOrCreate(&q, models.Question{Enonce: q.Enonce})
 	}
 
+	// Seed Concepts
+	defaultConcepts := []string{"UML", "POO", "Agile", "SQL", "Algorithmique", "Réseaux", "Base de données", "HTML/CSS", "Programmation", "Architecture logicielle"}
+	for _, nom := range defaultConcepts {
+		concept := models.Concept{Nom: nom}
+		db.FirstOrCreate(&concept, models.Concept{Nom: nom})
+	}
+
 	// Seed Ressources Pédagogiques
 	ressources := []models.RessourcePedagogique{
 		{

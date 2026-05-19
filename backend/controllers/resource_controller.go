@@ -59,7 +59,7 @@ func CreateResource(c *gin.Context) {
 		Concept:          payload.Concept,
 		NiveauDifficulte: payload.NiveauDifficulte,
 		Pertinence:       payload.Pertinence,
-		AuteurID:         uint(userID.(float64)),
+		AuteurID:         userID.(uint),
 	}
 
 	if err := config.DB.Create(&resource).Error; err != nil {
@@ -83,7 +83,7 @@ func UpdateResource(c *gin.Context) {
 	// Authorization check
 	userID, _ := c.Get("user_id")
 	userRole, _ := c.Get("user_role")
-	if userRole != "admin" && uint(userID.(float64)) != resource.AuteurID {
+	if userRole != "admin" && userID.(uint) != resource.AuteurID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Non autorisé à modifier cette ressource"})
 		return
 	}
@@ -122,7 +122,7 @@ func DeleteResource(c *gin.Context) {
 	// Authorization check
 	userID, _ := c.Get("user_id")
 	userRole, _ := c.Get("user_role")
-	if userRole != "admin" && uint(userID.(float64)) != resource.AuteurID {
+	if userRole != "admin" && userID.(uint) != resource.AuteurID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Non autorisé à supprimer cette ressource"})
 		return
 	}

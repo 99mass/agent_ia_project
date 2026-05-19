@@ -25,6 +25,13 @@ type User struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
+// Concept represents a pedagogical concept/skill area (e.g., UML, SQL, POO)
+type Concept struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Nom       string    `gorm:"unique" json:"nom"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // TestNiveau represents an evaluation test
 type TestNiveau struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
@@ -82,6 +89,7 @@ type Recommandation struct {
 	ResultatID             uint      `json:"resultat_id"`
 	EtudiantID             uint      `json:"etudiant_id"`
 	RessourcePedagogiqueID uint      `json:"ressource_pedagogique_id"`
+	Ressource              RessourcePedagogique `gorm:"foreignKey:RessourcePedagogiqueID" json:"ressource"`
 	Raison                 string    `json:"raison"` // e.g., "Lacune identifiée en UML"
 	DateRecommandation     time.Time `json:"date_recommandation"`
 }

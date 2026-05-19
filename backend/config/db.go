@@ -30,6 +30,7 @@ func ConnectDatabase() {
 	// Auto-migrate models
 	err = database.AutoMigrate(
 		&models.User{},
+		&models.Concept{},
 		&models.TestNiveau{},
 		&models.Question{},
 		&models.Reponse{},

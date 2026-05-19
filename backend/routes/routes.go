@@ -48,6 +48,8 @@ func SetupRoutes(router *gin.Engine) {
 			tests.DELETE("/:id", controllers.DeleteTest)
 			tests.POST("/import-csv", controllers.ImportTestsCSV)
 			tests.POST("/:id/submit", controllers.SubmitTest)
+			tests.GET("/recommendations", controllers.GetRecommendations)
+			tests.GET("/concepts", controllers.GetConcepts)
 		}
 
 		// Resources routes (protected: auth required)
@@ -58,6 +60,15 @@ func SetupRoutes(router *gin.Engine) {
 			resources.POST("/", controllers.CreateResource)
 			resources.PUT("/:id", controllers.UpdateResource)
 			resources.DELETE("/:id", controllers.DeleteResource)
+		}
+
+		// Concepts routes (protected: auth required)
+		concepts := api.Group("/concepts")
+		concepts.Use(middleware.AuthMiddleware())
+		{
+			concepts.GET("/", controllers.GetConceptsList)
+			concepts.POST("/", controllers.CreateConcept)
+			concepts.DELETE("/:id", controllers.DeleteConcept)
 		}
 	}
 }
