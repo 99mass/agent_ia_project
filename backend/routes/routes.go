@@ -43,7 +43,7 @@ func SetupRoutes(router *gin.Engine) {
 		tests.Use(middleware.AuthMiddleware())
 		{
 			tests.GET("/", controllers.GetTests)
-			tests.POST("/", func(c *gin.Context) { c.JSON(200, gin.H{"status": "create test not implemented yet"}) })
+			tests.POST("/", controllers.CreateTest)
 			tests.PUT("/:id", controllers.UpdateTest)
 			tests.DELETE("/:id", controllers.DeleteTest)
 			tests.POST("/import-csv", controllers.ImportTestsCSV)
@@ -54,8 +54,10 @@ func SetupRoutes(router *gin.Engine) {
 		resources := api.Group("/resources")
 		resources.Use(middleware.AuthMiddleware())
 		{
-			resources.GET("/", func(c *gin.Context) { c.JSON(200, gin.H{"status": "get resources not implemented yet"}) })
-			resources.POST("/", func(c *gin.Context) { c.JSON(200, gin.H{"status": "create resource not implemented yet"}) })
+			resources.GET("/", controllers.GetResources)
+			resources.POST("/", controllers.CreateResource)
+			resources.PUT("/:id", controllers.UpdateResource)
+			resources.DELETE("/:id", controllers.DeleteResource)
 		}
 	}
 }

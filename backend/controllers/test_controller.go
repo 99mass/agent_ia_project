@@ -97,11 +97,94 @@ func SubmitTest(c *gin.Context) {
 	var aiResponse map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&aiResponse)
 
+	// Save recommendations to database
+	if recs, ok := aiResponse["recommendations"].([]interface{}); ok {
+		for _, recInterface := range recs {
+			if recMap, ok := recInterface.(map[string]interface{}); ok {
+				// Safely parse the resource ID and reason
+				var ressourceID uint
+				if idFloat, ok := recMap["ressource_id"].(float64); ok {
+					ressourceID = uint(idFloat)
+				}
+				
+				raison, _ := recMap["raison"].(string)
+
+				if ressourceID > 0 {
+					recommendation := models.Recommandation{
+						ResultatID:             resultat.ID,
+						EtudiantID:             payload.EtudiantID,
+						RessourcePedagogiqueID: ressourceID,
+						Raison:                 raison,
+						DateRecommandation:     time.Now(),
+					}
+					config.DB.Create(&recommendation)
+				}
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Test validé avec succès. Recommandations générées.",
+		"message": "Test validé avec succès. Recommandations générées et sauvegardées.",
 		"resultat": resultat,
 		"recommendations": aiResponse["recommendations"],
 	})
+}
+
+// CreateTestPayload is the expected input for creating a test
+type CreateTestPayload struct {
+	Titre       string                  `json:"titre" binding:"required"`
+	Description string                  `json:"description" binding:"required"`
+	Domaine     string                  `json:"domaine" binding:"required"`
+	NiveauCible string                  `json:"niveau_cible" binding:"required"`
+	Questions   []CreateQuestionPayload `json:"questions" binding:"required"`
+}
+
+type CreateQuestionPayload struct {
+	Enonce  string `json:"enonce" binding:"required"`
+	Concept string `json:"concept" binding:"required"`
+	Points  int    `json:"points" binding:"required"`
+}
+
+// CreateTest handles the creation of a new evaluation test
+func CreateTest(c *gin.Context) {
+	var payload CreateTestPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Données invalides ou incomplètes"})
+		return
+	}
+
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Non autorisé"})
+		return
+	}
+
+	// Create test
+	test := models.TestNiveau{
+		Titre:       payload.Titre,
+		Description: payload.Description,
+		Domaine:     payload.Domaine,
+		NiveauCible: payload.NiveauCible,
+		AuteurID:    uint(userID.(float64)),
+	}
+
+	if err := config.DB.Create(&test).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la création du test"})
+		return
+	}
+
+	// Create questions
+	for _, qPayload := range payload.Questions {
+		question := models.Question{
+			TestNiveauID: test.ID,
+			Enonce:       qPayload.Enonce,
+			Concept:      qPayload.Concept,
+			Points:       qPayload.Points,
+		}
+		config.DB.Create(&question)
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Test créé avec succès", "test": test})
 }
 
 // GetTests returns all available tests, optionally with their questions count
