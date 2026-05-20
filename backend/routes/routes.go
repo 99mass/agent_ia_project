@@ -44,12 +44,14 @@ func SetupRoutes(router *gin.Engine) {
 		{
 			tests.GET("/", controllers.GetTests)
 			tests.POST("/", controllers.CreateTest)
+			tests.GET("/recommendations", controllers.GetRecommendations)
+			tests.GET("/concepts", controllers.GetConcepts)
+			tests.GET("/results", controllers.GetStudentResults)
+			tests.GET("/:id", controllers.GetTestByID)
 			tests.PUT("/:id", controllers.UpdateTest)
 			tests.DELETE("/:id", controllers.DeleteTest)
 			tests.POST("/import-csv", controllers.ImportTestsCSV)
 			tests.POST("/:id/submit", controllers.SubmitTest)
-			tests.GET("/recommendations", controllers.GetRecommendations)
-			tests.GET("/concepts", controllers.GetConcepts)
 		}
 
 		// Resources routes (protected: auth required)

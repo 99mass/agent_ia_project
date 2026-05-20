@@ -95,8 +95,50 @@ func SeedDatabase(db *gorm.DB) {
 		{TestNiveauID: test1.ID, Enonce: "Quelle est la différence entre une classe et un objet ?", Concept: "POO", Points: 10},
 		{TestNiveauID: test1.ID, Enonce: "Quel modèle de cycle de vie est basé sur des itérations (Sprints) ?", Concept: "Agile", Points: 10},
 	}
-	for _, q := range questions {
-		db.FirstOrCreate(&q, models.Question{Enonce: q.Enonce})
+	for i := range questions {
+		db.FirstOrCreate(&questions[i], models.Question{Enonce: questions[i].Enonce})
+	}
+
+	// Seed Reponses for UML
+	var qUml models.Question
+	if err := db.Where("enonce = ?", "Que signifie UML ?").First(&qUml).Error; err == nil {
+		reponses := []models.Reponse{
+			{QuestionID: qUml.ID, Texte: "Unified Modeling Language — un langage de modélisation standardisé pour visualiser la conception d'un système.", EstCorrect: true},
+			{QuestionID: qUml.ID, Texte: "Universal Machine Learning — un framework d'apprentissage automatique.", EstCorrect: false},
+			{QuestionID: qUml.ID, Texte: "User Management Layer — une couche de gestion des utilisateurs.", EstCorrect: false},
+			{QuestionID: qUml.ID, Texte: "Unified Memory Loader — un outil de gestion de mémoire.", EstCorrect: false},
+		}
+		for _, r := range reponses {
+			db.FirstOrCreate(&r, models.Reponse{QuestionID: r.QuestionID, Texte: r.Texte})
+		}
+	}
+
+	// Seed Reponses for POO
+	var qPoo models.Question
+	if err := db.Where("enonce = ?", "Quelle est la différence entre une classe et un objet ?").First(&qPoo).Error; err == nil {
+		reponses := []models.Reponse{
+			{QuestionID: qPoo.ID, Texte: "Il n'y a aucune différence, ce sont des synonymes.", EstCorrect: false},
+			{QuestionID: qPoo.ID, Texte: "Une classe est un modèle (blueprint), un objet est une instance concrète de cette classe.", EstCorrect: true},
+			{QuestionID: qPoo.ID, Texte: "Un objet est un modèle, une classe est une instance.", EstCorrect: false},
+			{QuestionID: qPoo.ID, Texte: "Une classe ne contient que des méthodes, un objet ne contient que des attributs.", EstCorrect: false},
+		}
+		for _, r := range reponses {
+			db.FirstOrCreate(&r, models.Reponse{QuestionID: r.QuestionID, Texte: r.Texte})
+		}
+	}
+
+	// Seed Reponses for Agile
+	var qAgile models.Question
+	if err := db.Where("enonce = ?", "Quel modèle de cycle de vie est basé sur des itérations (Sprints) ?").First(&qAgile).Error; err == nil {
+		reponses := []models.Reponse{
+			{QuestionID: qAgile.ID, Texte: "Le modèle en cascade (Waterfall).", EstCorrect: false},
+			{QuestionID: qAgile.ID, Texte: "Le modèle en V.", EstCorrect: false},
+			{QuestionID: qAgile.ID, Texte: "La méthode Scrum (Agile).", EstCorrect: true},
+			{QuestionID: qAgile.ID, Texte: "Le modèle en spirale.", EstCorrect: false},
+		}
+		for _, r := range reponses {
+			db.FirstOrCreate(&r, models.Reponse{QuestionID: r.QuestionID, Texte: r.Texte})
+		}
 	}
 
 	// Seed Concepts

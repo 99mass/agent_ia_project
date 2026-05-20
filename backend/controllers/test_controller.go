@@ -22,6 +22,22 @@ type SubmitTestPayload struct {
 	Reponses   map[uint]string    `json:"reponses"` // map of question_id to answer string
 }
 
+// QuestionOption is a student-safe option response structure
+type QuestionOption struct {
+	ID    uint   `json:"id"`
+	Texte string `json:"texte"`
+}
+
+// QuestionStudentView is a student-safe question structure (does not expose correctness)
+type QuestionStudentView struct {
+	ID           uint             `json:"id"`
+	TestNiveauID uint             `json:"test_niveau_id"`
+	Enonce       string           `json:"enonce"`
+	Concept      string           `json:"concept"`
+	Points       int              `json:"points"`
+	Options      []QuestionOption `json:"options"`
+}
+
 // UpdateTestPayload represents the expected request body for updating a test
 type UpdateTestPayload struct {
 	Titre       string `json:"titre"`
@@ -30,7 +46,7 @@ type UpdateTestPayload struct {
 	NiveauCible string `json:"niveau_cible"`
 }
 
-// SubmitTest handles the submission of a student's test
+// SubmitTest handles the submission of a student's test with real correction logic
 func SubmitTest(c *gin.Context) {
 	testID := c.Param("id")
 	var payload SubmitTestPayload
@@ -47,18 +63,49 @@ func SubmitTest(c *gin.Context) {
 		return
 	}
 
-	// Simple scoring logic
-	scoresParConcept := make(map[string]int)
-	scoreGlobal := 0
+	if len(questions) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Test vide ou inexistant"})
+		return
+	}
+
+	// Dynamic grading logic using DB answers (Reponse)
+	pointsParConcept := make(map[string]int)
+	pointsGagnesParConcept := make(map[string]int)
 
 	for _, q := range questions {
-		if ans, exists := payload.Reponses[q.ID]; exists && ans != "" {
-			scoresParConcept[q.Concept] = 80 // Mock score
-			scoreGlobal += 80
-		} else {
-			scoresParConcept[q.Concept] = 30 // Mock low score (lacune)
-			scoreGlobal += 30
+		pointsParConcept[q.Concept] += q.Points
+
+		var correctRep models.Reponse
+		// Find the correct option in DB
+		if err := config.DB.Where("question_id = ? AND est_correct = ?", q.ID, true).First(&correctRep).Error; err == nil {
+			if ans, exists := payload.Reponses[q.ID]; exists && ans != "" {
+				// The answer sent can be the string of the Response ID
+				ansID, err := strconv.ParseUint(ans, 10, 32)
+				if err == nil && uint(ansID) == correctRep.ID {
+					pointsGagnesParConcept[q.Concept] += q.Points
+				}
+			}
 		}
+	}
+
+	scoresParConcept := make(map[string]int)
+	totalPoints := 0
+	totalEarned := 0
+
+	for concept, total := range pointsParConcept {
+		earned := pointsGagnesParConcept[concept]
+		score := 0
+		if total > 0 {
+			score = (earned * 100) / total
+		}
+		scoresParConcept[concept] = score
+		totalPoints += total
+		totalEarned += earned
+	}
+
+	scoreGlobal := 0
+	if totalPoints > 0 {
+		scoreGlobal = (totalEarned * 100) / totalPoints
 	}
 
 	scoresDetailJSON, _ := json.Marshal(scoresParConcept)
@@ -66,7 +113,7 @@ func SubmitTest(c *gin.Context) {
 	resultat := models.Resultat{
 		EtudiantID:   payload.EtudiantID,
 		TestNiveauID: questions[0].TestNiveauID, 
-		ScoreGlobal:  scoreGlobal / len(questions),
+		ScoreGlobal:  scoreGlobal,
 		ScoresDetail: string(scoresDetailJSON),
 		DatePassage:  time.Now(),
 	}
@@ -101,7 +148,6 @@ func SubmitTest(c *gin.Context) {
 	if recs, ok := aiResponse["recommendations"].([]interface{}); ok {
 		for _, recInterface := range recs {
 			if recMap, ok := recInterface.(map[string]interface{}); ok {
-				// Safely parse the resource ID and reason
 				var ressourceID uint
 				if idFloat, ok := recMap["ressource_id"].(float64); ok {
 					ressourceID = uint(idFloat)
@@ -429,4 +475,85 @@ func GetConcepts(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, concepts)
+}
+
+// GetTestByID returns details of a test along with its questions (safe for students)
+func GetTestByID(c *gin.Context) {
+	testID := c.Param("id")
+	var test models.TestNiveau
+
+	if err := config.DB.First(&test, testID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Test non trouvé"})
+		return
+	}
+
+	var questions []models.Question
+	if err := config.DB.Where("test_niveau_id = ?", test.ID).Find(&questions).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de récupérer les questions"})
+		return
+	}
+
+	var studentQuestions []QuestionStudentView
+	for _, q := range questions {
+		var responses []models.Reponse
+		config.DB.Where("question_id = ?", q.ID).Find(&responses)
+
+		var options []QuestionOption
+		for _, r := range responses {
+			options = append(options, QuestionOption{
+				ID:    r.ID,
+				Texte: r.Texte,
+			})
+		}
+
+		studentQuestions = append(studentQuestions, QuestionStudentView{
+			ID:           q.ID,
+			TestNiveauID: q.TestNiveauID,
+			Enonce:       q.Enonce,
+			Concept:      q.Concept,
+			Points:       q.Points,
+			Options:      options,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"test":      test,
+		"questions": studentQuestions,
+	})
+}
+
+// GetStudentResults returns the test results (scores) of the logged-in student
+func GetStudentResults(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Non autorisé"})
+		return
+	}
+	studentID := userID.(uint)
+
+	// Custom struct to return result with test details
+	type ResultWithTest struct {
+		models.Resultat
+		TestTitre   string `json:"test_titre"`
+		TestDomaine string `json:"test_domaine"`
+	}
+
+	var dbResults []models.Resultat
+	if err := config.DB.Where("etudiant_id = ?", studentID).Order("date_passage DESC").Find(&dbResults).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible de récupérer les résultats"})
+		return
+	}
+
+	results := []ResultWithTest{}
+	for _, r := range dbResults {
+		var test models.TestNiveau
+		config.DB.Select("titre", "domaine").First(&test, r.TestNiveauID)
+		results = append(results, ResultWithTest{
+			Resultat:    r,
+			TestTitre:   test.Titre,
+			TestDomaine: test.Domaine,
+		})
+	}
+
+	c.JSON(http.StatusOK, results)
 }
