@@ -233,12 +233,13 @@ func CreateTest(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Test créé avec succès", "test": test})
 }
 
-// GetTests returns all available tests, optionally with their questions count
+// GetTests returns all available tests, optionally with their questions count and concepts
 func GetTests(c *gin.Context) {
-	// Let's create a custom struct to return tests with their questions count
+	// Custom struct to return tests with their questions count and covered concepts
 	type TestWithCounts struct {
 		models.TestNiveau
-		NbQuestions int `json:"nb_questions"`
+		NbQuestions int      `json:"nb_questions"`
+		Concepts    []string `json:"concepts"`
 	}
 
 	var tests []models.TestNiveau
@@ -251,9 +252,15 @@ func GetTests(c *gin.Context) {
 	for _, t := range tests {
 		var count int64
 		config.DB.Model(&models.Question{}).Where("test_niveau_id = ?", t.ID).Count(&count)
+
+		// Fetch distinct concepts covered by this test's questions
+		var testConcepts []string
+		config.DB.Model(&models.Question{}).Where("test_niveau_id = ?", t.ID).Distinct("concept").Pluck("concept", &testConcepts)
+
 		results = append(results, TestWithCounts{
 			TestNiveau:  t,
 			NbQuestions: int(count),
+			Concepts:    testConcepts,
 		})
 	}
 
