@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -124,7 +125,10 @@ func SubmitTest(c *gin.Context) {
 	}
 
 	// Send data to Python AI Engine
-	aiEngineURL := "http://localhost:8000/api/recommend"
+	aiEngineURL := os.Getenv("AI_ENGINE_URL")
+	if aiEngineURL == "" {
+		aiEngineURL = "http://localhost:8000/api/recommend"
+	}
 	aiPayload, _ := json.Marshal(map[string]interface{}{
 		"resultat_id":   resultat.ID,
 		"etudiant_id":   resultat.EtudiantID,
@@ -185,10 +189,16 @@ type CreateTestPayload struct {
 	Questions   []CreateQuestionPayload `json:"questions" binding:"required"`
 }
 
+type CreateOptionPayload struct {
+	Texte      string `json:"texte" binding:"required"`
+	EstCorrect bool   `json:"est_correct"`
+}
+
 type CreateQuestionPayload struct {
-	Enonce  string `json:"enonce" binding:"required"`
-	Concept string `json:"concept" binding:"required"`
-	Points  int    `json:"points" binding:"required"`
+	Enonce  string                `json:"enonce" binding:"required"`
+	Concept string                `json:"concept" binding:"required"`
+	Points  int                   `json:"points" binding:"required"`
+	Options []CreateOptionPayload `json:"options" binding:"required"`
 }
 
 // CreateTest handles the creation of a new evaluation test
@@ -219,7 +229,7 @@ func CreateTest(c *gin.Context) {
 		return
 	}
 
-	// Create questions
+	// Create questions and options
 	for _, qPayload := range payload.Questions {
 		question := models.Question{
 			TestNiveauID: test.ID,
@@ -228,12 +238,22 @@ func CreateTest(c *gin.Context) {
 			Points:       qPayload.Points,
 		}
 		config.DB.Create(&question)
+
+		// Create options/choices
+		for _, oPayload := range qPayload.Options {
+			option := models.Reponse{
+				QuestionID: question.ID,
+				Texte:      oPayload.Texte,
+				EstCorrect: oPayload.EstCorrect,
+			}
+			config.DB.Create(&option)
+		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Test créé avec succès", "test": test})
 }
 
-// GetTests returns all available tests, optionally with their questions count and concepts
+// GetTests returns all available tests, optionally filtered by niveau_cible (?niveau=Master 2)
 func GetTests(c *gin.Context) {
 	// Custom struct to return tests with their questions count and covered concepts
 	type TestWithCounts struct {
@@ -243,7 +263,14 @@ func GetTests(c *gin.Context) {
 	}
 
 	var tests []models.TestNiveau
-	if err := config.DB.Order("created_at DESC").Find(&tests).Error; err != nil {
+	query := config.DB.Order("created_at DESC")
+
+	// Optional filter by niveau_cible (used by the student dashboard)
+	if niveau := c.Query("niveau"); niveau != "" {
+		query = query.Where("niveau_cible = ?", niveau)
+	}
+
+	if err := query.Find(&tests).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la récupération des tests"})
 		return
 	}

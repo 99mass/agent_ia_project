@@ -35,17 +35,18 @@ def generate_recommendations(req: RecommendationRequest):
         
         # Analyze student scores
         for concept, score in req.student_scores.items():
-            # If the score is below the mastery threshold (e.g. 60%)
+            concept_res = df_resources[df_resources['concept'] == concept]
+            if concept_res.empty:
+                continue
+
             if score < 60:
-                # Filter resources by concept
-                concept_res = df_resources[df_resources['concept'] == concept]
-                
-                # Further filter for beginner/remedial resources (niveau_difficulte <= 2)
+                # If the score is below the mastery threshold, recommend remedial resources (niveau_difficulte <= 2)
                 suitable_res = concept_res[concept_res['niveau_difficulte'] <= 2]
+                if suitable_res.empty:
+                    suitable_res = concept_res
                 
                 # Sort by pertinence (highest first) and pick top 2
                 top_res = suitable_res.sort_values(by='pertinence', ascending=False).head(2)
-                
                 for _, row in top_res.iterrows():
                     recommendations.append({
                         "ressource_id": row['id'],
@@ -53,6 +54,22 @@ def generate_recommendations(req: RecommendationRequest):
                         "lien": row['lien'],
                         "concept": concept,
                         "raison": f"Lacune identifiée en {concept} (Score: {score}%)"
+                    })
+            else:
+                # If the score is >= 60, recommend advanced resources for deepening knowledge (niveau_difficulte >= 2)
+                suitable_res = concept_res[concept_res['niveau_difficulte'] >= 2]
+                if suitable_res.empty:
+                    suitable_res = concept_res
+                
+                # Pick the top 1 most relevant resource for enrichment
+                top_res = suitable_res.sort_values(by='pertinence', ascending=False).head(1)
+                for _, row in top_res.iterrows():
+                    recommendations.append({
+                        "ressource_id": row['id'],
+                        "titre": row['titre'],
+                        "lien": row['lien'],
+                        "concept": concept,
+                        "raison": f"Approfondissement conseillé en {concept} (Score: {score}%)"
                     })
         
         # In a real scenario, we should also save these recommendations into the `recommandations` table

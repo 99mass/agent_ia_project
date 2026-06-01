@@ -70,6 +70,7 @@ func SetupRoutes(router *gin.Engine) {
 		{
 			concepts.GET("/", controllers.GetConceptsList)
 			concepts.POST("/", controllers.CreateConcept)
+			concepts.PUT("/:id", controllers.UpdateConcept)
 			concepts.DELETE("/:id", controllers.DeleteConcept)
 		}
 	}

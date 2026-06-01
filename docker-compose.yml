@@ -26,6 +26,7 @@ services:
       DB_PASSWORD: unchk_password
       DB_NAME: unchk_agent_ia
       JWT_SECRET: unchk-agent-ia-production-secret-2025
+      AI_ENGINE_URL: http://ai_agent:8000/api/recommend
     depends_on:
       - db
     restart: unless-stopped

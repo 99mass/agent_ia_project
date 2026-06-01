@@ -187,7 +187,7 @@ func SeedDatabase(db *gorm.DB) {
 		Titre:       "Fondamentaux de la Programmation Orientée Objet",
 		Description: "Évaluation des concepts de base de la POO : encapsulation, héritage, polymorphisme.",
 		Domaine:     "Programmation",
-		NiveauCible: "Licence 3",
+		NiveauCible: "Master 2",
 		AuteurID:    authorID,
 	})
 
@@ -221,7 +221,7 @@ func SeedDatabase(db *gorm.DB) {
 		Titre:       "Design Patterns et POO avancée",
 		Description: "Évaluation sur les patrons de conception : Singleton, Observer, Factory et MVC.",
 		Domaine:     "Programmation",
-		NiveauCible: "Master 1",
+		NiveauCible: "Master 2",
 		AuteurID:    authorID,
 	})
 
@@ -248,7 +248,7 @@ func SeedDatabase(db *gorm.DB) {
 		Titre:       "Méthodologies Agiles et Gestion de Projet",
 		Description: "Évaluation sur Scrum, Kanban, les rôles Agile et les cérémonies.",
 		Domaine:     "Gestion de Projet",
-		NiveauCible: "Master 1",
+		NiveauCible: "Master 2",
 		AuteurID:    authorID,
 	})
 
@@ -316,7 +316,7 @@ func SeedDatabase(db *gorm.DB) {
 		Titre:       "SQL avancé : sous-requêtes et optimisation",
 		Description: "Évaluation sur les sous-requêtes, les index, les vues et les transactions.",
 		Domaine:     "Base de données",
-		NiveauCible: "Master 1",
+		NiveauCible: "Master 2",
 		AuteurID:    authorID,
 	})
 
@@ -377,7 +377,7 @@ func SeedDatabase(db *gorm.DB) {
 		Titre:       "Récursivité et algorithmes sur les graphes",
 		Description: "Évaluation sur la récursivité, les parcours de graphes BFS/DFS et Dijkstra.",
 		Domaine:     "Informatique fondamentale",
-		NiveauCible: "Licence 3",
+		NiveauCible: "Master 2",
 		AuteurID:    authorID,
 	})
 
@@ -438,7 +438,7 @@ func SeedDatabase(db *gorm.DB) {
 		Titre:       "Sécurité des réseaux et protocoles",
 		Description: "Évaluation sur les pare-feux, VPN, chiffrement et menaces réseau.",
 		Domaine:     "Réseaux",
-		NiveauCible: "Master 1",
+		NiveauCible: "Master 2",
 		AuteurID:    authorID,
 	})
 
@@ -465,7 +465,7 @@ func SeedDatabase(db *gorm.DB) {
 		Titre:       "Conception et modélisation des bases de données",
 		Description: "Évaluation sur le modèle E/R, la normalisation et les contraintes d'intégrité.",
 		Domaine:     "Base de données",
-		NiveauCible: "Licence 3",
+		NiveauCible: "Master 2",
 		AuteurID:    authorID,
 	})
 
@@ -533,7 +533,7 @@ func SeedDatabase(db *gorm.DB) {
 		Titre:       "CSS avancé : Grid, animations et variables",
 		Description: "Évaluation sur CSS Grid, les animations CSS, les variables custom et les pseudo-classes.",
 		Domaine:     "Développement Web",
-		NiveauCible: "Licence 3",
+		NiveauCible: "Master 2",
 		AuteurID:    authorID,
 	})
 
@@ -594,7 +594,7 @@ func SeedDatabase(db *gorm.DB) {
 		Titre:       "Programmation système et gestion de mémoire",
 		Description: "Évaluation sur les pointeurs, l'allocation mémoire, les processus et les threads.",
 		Domaine:     "Programmation",
-		NiveauCible: "Master 1",
+		NiveauCible: "Master 2",
 		AuteurID:    authorID,
 	})
 
@@ -682,7 +682,7 @@ func SeedDatabase(db *gorm.DB) {
 		Titre:       "Bases de données NoSQL et Big Data",
 		Description: "Évaluation sur MongoDB, Redis, les bases document, clé-valeur et les concepts Big Data.",
 		Domaine:     "Base de données",
-		NiveauCible: "Master 1",
+		NiveauCible: "Master 2",
 		AuteurID:    authorID,
 	})
 

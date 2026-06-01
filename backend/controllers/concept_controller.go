@@ -79,3 +79,41 @@ func DeleteConcept(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Concept supprimé avec succès"})
 }
+
+// UpdateConcept des-updates a concept's name
+func UpdateConcept(c *gin.Context) {
+	id := c.Param("id")
+	var concept models.Concept
+
+	if err := config.DB.First(&concept, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Concept non trouvé"})
+		return
+	}
+
+	var payload CreateConceptPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Le nom du concept est requis"})
+		return
+	}
+
+	nom := strings.TrimSpace(payload.Nom)
+	if nom == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Le nom du concept ne peut pas être vide"})
+		return
+	}
+
+	// Check if another concept has the same name
+	var existing models.Concept
+	if err := config.DB.Where("LOWER(nom) = LOWER(?) AND id != ?", nom, concept.ID).First(&existing).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Ce concept existe déjà"})
+		return
+	}
+
+	concept.Nom = nom
+	if err := config.DB.Save(&concept).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la modification du concept"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Concept modifié avec succès", "concept": concept})
+}
