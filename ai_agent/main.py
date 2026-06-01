@@ -20,10 +20,21 @@ class RecommendationRequest(BaseModel):
     resultat_id: int
     etudiant_id: int
     student_scores: dict  # e.g., {"UML": 40, "POO": 80, "Agile": 30}
+    format_prefere: str = "tous"
 
 @app.post("/api/recommend")
 def generate_recommendations(req: RecommendationRequest):
     try:
+        # Load mastery threshold from database
+        mastery_threshold = 60.0
+        try:
+            config_query = "SELECT value FROM system_configs WHERE key = 'seuil_recommandation' LIMIT 1"
+            df_config = pd.read_sql(config_query, engine)
+            if not df_config.empty:
+                mastery_threshold = float(df_config.iloc[0]['value'])
+        except Exception as ce:
+            print("Erreur de chargement du seuil depuis la base de données, utilisation de la valeur par défaut 60.0 :", ce)
+
         # Load resources from database into a pandas DataFrame
         query = "SELECT * FROM ressource_pedagogiques"
         df_resources = pd.read_sql(query, engine)
@@ -39,12 +50,27 @@ def generate_recommendations(req: RecommendationRequest):
             if concept_res.empty:
                 continue
 
-            if score < 60:
+            if score < mastery_threshold:
                 # If the score is below the mastery threshold, recommend remedial resources (niveau_difficulte <= 2)
                 suitable_res = concept_res[concept_res['niveau_difficulte'] <= 2]
                 if suitable_res.empty:
                     suitable_res = concept_res
                 
+                # Apply format preference filter if active and matches resources
+                if req.format_prefere and req.format_prefere != "tous":
+                    pref_filter = req.format_prefere.lower()
+                    if pref_filter == "video":
+                        format_res = suitable_res[suitable_res['type'].str.lower().str.contains("video|vidéo")]
+                    elif pref_filter == "pdf":
+                        format_res = suitable_res[suitable_res['type'].str.lower().str.contains("pdf|cours")]
+                    elif pref_filter == "exercice":
+                        format_res = suitable_res[suitable_res['type'].str.lower().str.contains("exercice|interactif|tp|pratique")]
+                    else:
+                        format_res = suitable_res[suitable_res['type'].str.lower().str.contains(pref_filter)]
+                    
+                    if not format_res.empty:
+                        suitable_res = format_res
+
                 # Sort by pertinence (highest first) and pick top 2
                 top_res = suitable_res.sort_values(by='pertinence', ascending=False).head(2)
                 for _, row in top_res.iterrows():
@@ -53,14 +79,29 @@ def generate_recommendations(req: RecommendationRequest):
                         "titre": row['titre'],
                         "lien": row['lien'],
                         "concept": concept,
-                        "raison": f"Lacune identifiée en {concept} (Score: {score}%)"
+                        "raison": f"Lacune identifiée en {concept} (Score: {score}%, seuil de maîtrise: {mastery_threshold}%)"
                     })
             else:
-                # If the score is >= 60, recommend advanced resources for deepening knowledge (niveau_difficulte >= 2)
+                # If the score is >= mastery_threshold, recommend advanced resources for deepening knowledge (niveau_difficulte >= 2)
                 suitable_res = concept_res[concept_res['niveau_difficulte'] >= 2]
                 if suitable_res.empty:
                     suitable_res = concept_res
                 
+                # Apply format preference filter if active and matches resources
+                if req.format_prefere and req.format_prefere != "tous":
+                    pref_filter = req.format_prefere.lower()
+                    if pref_filter == "video":
+                        format_res = suitable_res[suitable_res['type'].str.lower().str.contains("video|vidéo")]
+                    elif pref_filter == "pdf":
+                        format_res = suitable_res[suitable_res['type'].str.lower().str.contains("pdf|cours")]
+                    elif pref_filter == "exercice":
+                        format_res = suitable_res[suitable_res['type'].str.lower().str.contains("exercice|interactif|tp|pratique")]
+                    else:
+                        format_res = suitable_res[suitable_res['type'].str.lower().str.contains(pref_filter)]
+                    
+                    if not format_res.empty:
+                        suitable_res = format_res
+
                 # Pick the top 1 most relevant resource for enrichment
                 top_res = suitable_res.sort_values(by='pertinence', ascending=False).head(1)
                 for _, row in top_res.iterrows():
@@ -69,7 +110,7 @@ def generate_recommendations(req: RecommendationRequest):
                         "titre": row['titre'],
                         "lien": row['lien'],
                         "concept": concept,
-                        "raison": f"Approfondissement conseillé en {concept} (Score: {score}%)"
+                        "raison": f"Approfondissement conseillé en {concept} (Score: {score}%, seuil de maîtrise: {mastery_threshold}%)"
                     })
         
         # In a real scenario, we should also save these recommendations into the `recommandations` table

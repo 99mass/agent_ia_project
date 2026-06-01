@@ -124,15 +124,23 @@ func SubmitTest(c *gin.Context) {
 		return
 	}
 
+	// Fetch student format preference
+	var studentUser models.User
+	formatPrefere := "tous"
+	if err := config.DB.First(&studentUser, resultat.EtudiantID).Error; err == nil {
+		formatPrefere = studentUser.FormatPrefere
+	}
+
 	// Send data to Python AI Engine
 	aiEngineURL := os.Getenv("AI_ENGINE_URL")
 	if aiEngineURL == "" {
 		aiEngineURL = "http://localhost:8000/api/recommend"
 	}
 	aiPayload, _ := json.Marshal(map[string]interface{}{
-		"resultat_id":   resultat.ID,
-		"etudiant_id":   resultat.EtudiantID,
+		"resultat_id":    resultat.ID,
+		"etudiant_id":    resultat.EtudiantID,
 		"student_scores": scoresParConcept,
+		"format_prefere": formatPrefere,
 	})
 
 	resp, err := http.Post(aiEngineURL, "application/json", bytes.NewBuffer(aiPayload))

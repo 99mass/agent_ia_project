@@ -36,6 +36,16 @@ func SetupRoutes(router *gin.Engine) {
 			admin.DELETE("/users/:id", controllers.DeleteUser)
 			admin.POST("/users/:id/reset-password", controllers.ResetUserPassword)
 			admin.POST("/users/import-csv", controllers.ImportUsersCSV)
+			admin.GET("/configs", controllers.GetSystemConfigs)
+			admin.PUT("/configs", controllers.UpdateSystemConfigs)
+			admin.GET("/status", controllers.GetSystemStatus)
+		}
+
+		// Student routes (protected: auth required)
+		student := api.Group("/student")
+		student.Use(middleware.AuthMiddleware())
+		{
+			student.PUT("/preferences", controllers.UpdateStudentPreferences)
 		}
 
 		// Tests routes (protected: auth required)

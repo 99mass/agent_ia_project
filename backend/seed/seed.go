@@ -741,7 +741,16 @@ func SeedDatabase(db *gorm.DB) {
 		db.FirstOrCreate(&r, models.RessourcePedagogique{Titre: r.Titre})
 	}
 
-	log.Println("Données contextuelles UNCHK injectées avec succès (19 tests, 10 concepts, 20 ressources).")
+	// Seed system configurations
+	defaultConfigs := []models.SystemConfig{
+		{Key: "seuil_recommandation", Value: "60", Description: "Seuil de réussite (%) en dessous duquel un concept est considéré comme une lacune (recommandation de ressources de remédiation)."},
+		{Key: "ai_engine_url", Value: "http://localhost:8000/api/recommend", Description: "URL de l'API de l'Agent IA Python pour la génération des recommandations."},
+	}
+	for _, configEntry := range defaultConfigs {
+		db.FirstOrCreate(&configEntry, models.SystemConfig{Key: configEntry.Key})
+	}
+
+	log.Println("Données contextuelles UNCHK injectées avec succès (19 tests, 10 concepts, 20 ressources, 2 configurations).")
 }
 
 // Ensure admin user exists (for migration from old seeds)

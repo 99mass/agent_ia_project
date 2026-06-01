@@ -411,3 +411,47 @@ func generateTempPassword(length int) string {
 
 	return string(password)
 }
+
+// UpdateStudentPreferencesPayload represents the payload to update preferences
+type UpdateStudentPreferencesPayload struct {
+	FormatPrefere string `json:"format_prefere" binding:"required"`
+}
+
+// UpdateStudentPreferences updates the learning preferences of the authenticated student
+func UpdateStudentPreferences(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilisateur non authentifié"})
+		return
+	}
+
+	var payload UpdateStudentPreferencesPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Format invalide"})
+		return
+	}
+
+	// Validate format
+	validFormats := map[string]bool{"tous": true, "Video": true, "PDF": true, "Exercice": true}
+	if !validFormats[payload.FormatPrefere] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Format préféré invalide. Choisir parmi : tous, Video, PDF, Exercice"})
+		return
+	}
+
+	var user models.User
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Utilisateur non trouvé"})
+		return
+	}
+
+	user.FormatPrefere = payload.FormatPrefere
+	if err := config.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Impossible d'enregistrer les préférences"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":        "Préférences mises à jour avec succès",
+		"format_prefere": user.FormatPrefere,
+	})
+}

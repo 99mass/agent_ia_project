@@ -18,11 +18,12 @@ type User struct {
 	IsActive           bool           `json:"is_active" gorm:"default:true"`
 	MustChangePassword bool           `json:"must_change_password" gorm:"default:true"`
 	ENO                string         `json:"eno"`  // e.g., ENO de Dakar, ENO de Thiès (UNCHK specific)
-	Filiere   string         `json:"filiere"` // e.g., Informatique, Droit
-	Niveau    string         `json:"niveau"`  // e.g., L1, L2, L3, M1, M2
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	Filiere        string         `json:"filiere"` // e.g., Informatique, Droit
+	Niveau         string         `json:"niveau"`  // e.g., L1, L2, L3, M1, M2
+	FormatPrefere  string         `json:"format_prefere" gorm:"default:'tous'"` // e.g. tous, Video, PDF, Exercice
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // Concept represents a pedagogical concept/skill area (e.g., UML, SQL, POO)
@@ -93,3 +94,13 @@ type Recommandation struct {
 	Raison                 string    `json:"raison"` // e.g., "Lacune identifiée en UML"
 	DateRecommandation     time.Time `json:"date_recommandation"`
 }
+
+// SystemConfig represents a system settings entry
+type SystemConfig struct {
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	Key         string    `gorm:"uniqueIndex" json:"key"`
+	Value       string    `json:"value"`
+	Description string    `json:"description"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+

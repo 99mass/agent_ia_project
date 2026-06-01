@@ -37,6 +37,7 @@ func ConnectDatabase() {
 		&models.Resultat{},
 		&models.RessourcePedagogique{},
 		&models.Recommandation{},
+		&models.SystemConfig{},
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
