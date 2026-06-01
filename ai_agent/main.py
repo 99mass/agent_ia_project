@@ -21,19 +21,26 @@ class RecommendationRequest(BaseModel):
     etudiant_id: int
     student_scores: dict  # e.g., {"UML": 40, "POO": 80, "Agile": 30}
     format_prefere: str = "tous"
+    seuil_reussite: int = None
 
 @app.post("/api/recommend")
 def generate_recommendations(req: RecommendationRequest):
     try:
-        # Load mastery threshold from database
+        # Load mastery threshold (fallback: database configuration, default 60.0)
         mastery_threshold = 60.0
-        try:
-            config_query = "SELECT value FROM system_configs WHERE key = 'seuil_recommandation' LIMIT 1"
-            df_config = pd.read_sql(config_query, engine)
-            if not df_config.empty:
-                mastery_threshold = float(df_config.iloc[0]['value'])
-        except Exception as ce:
-            print("Erreur de chargement du seuil depuis la base de données, utilisation de la valeur par défaut 60.0 :", ce)
+        
+        if req.seuil_reussite is not None and req.seuil_reussite > 0:
+            mastery_threshold = float(req.seuil_reussite)
+            print(f"Utilisation du seuil spécifique au test défini par l'enseignant : {mastery_threshold}%")
+        else:
+            try:
+                config_query = "SELECT value FROM system_configs WHERE key = 'seuil_recommandation' LIMIT 1"
+                df_config = pd.read_sql(config_query, engine)
+                if not df_config.empty:
+                    mastery_threshold = float(df_config.iloc[0]['value'])
+                    print(f"Utilisation du seuil système global : {mastery_threshold}%")
+            except Exception as ce:
+                print("Erreur de chargement du seuil global, utilisation de 60.0 :", ce)
 
         # Load resources from database into a pandas DataFrame
         query = "SELECT * FROM ressource_pedagogiques"

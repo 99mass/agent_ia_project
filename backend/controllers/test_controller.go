@@ -57,6 +57,13 @@ func SubmitTest(c *gin.Context) {
 		return
 	}
 
+	// Fetch test details to get specific threshold
+	var testObj models.TestNiveau
+	if err := config.DB.First(&testObj, testID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Test inexistant"})
+		return
+	}
+
 	// Fetch the questions for this test to calculate the score
 	var questions []models.Question
 	if err := config.DB.Where("test_niveau_id = ?", testID).Find(&questions).Error; err != nil {
@@ -141,6 +148,7 @@ func SubmitTest(c *gin.Context) {
 		"etudiant_id":    resultat.EtudiantID,
 		"student_scores": scoresParConcept,
 		"format_prefere": formatPrefere,
+		"seuil_reussite": testObj.SeuilReussite,
 	})
 
 	resp, err := http.Post(aiEngineURL, "application/json", bytes.NewBuffer(aiPayload))
@@ -190,11 +198,12 @@ func SubmitTest(c *gin.Context) {
 
 // CreateTestPayload is the expected input for creating a test
 type CreateTestPayload struct {
-	Titre       string                  `json:"titre" binding:"required"`
-	Description string                  `json:"description" binding:"required"`
-	Domaine     string                  `json:"domaine" binding:"required"`
-	NiveauCible string                  `json:"niveau_cible" binding:"required"`
-	Questions   []CreateQuestionPayload `json:"questions" binding:"required"`
+	Titre         string                  `json:"titre" binding:"required"`
+	Description   string                  `json:"description" binding:"required"`
+	Domaine       string                  `json:"domaine" binding:"required"`
+	NiveauCible   string                  `json:"niveau_cible" binding:"required"`
+	SeuilReussite int                     `json:"seuil_reussite"` // Seuil de maîtrise pour ce test
+	Questions     []CreateQuestionPayload `json:"questions" binding:"required"`
 }
 
 type CreateOptionPayload struct {
@@ -223,13 +232,19 @@ func CreateTest(c *gin.Context) {
 		return
 	}
 
+	seuil := payload.SeuilReussite
+	if seuil <= 0 || seuil > 100 {
+		seuil = 60
+	}
+
 	// Create test
 	test := models.TestNiveau{
-		Titre:       payload.Titre,
-		Description: payload.Description,
-		Domaine:     payload.Domaine,
-		NiveauCible: payload.NiveauCible,
-		AuteurID:    userID.(uint),
+		Titre:         payload.Titre,
+		Description:   payload.Description,
+		Domaine:       payload.Domaine,
+		NiveauCible:   payload.NiveauCible,
+		SeuilReussite: seuil,
+		AuteurID:      userID.(uint),
 	}
 
 	if err := config.DB.Create(&test).Error; err != nil {

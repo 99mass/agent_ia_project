@@ -35,13 +35,14 @@ type Concept struct {
 
 // TestNiveau represents an evaluation test
 type TestNiveau struct {
-	ID          uint      `gorm:"primaryKey" json:"id"`
-	Titre       string    `json:"titre"`
-	Description string    `json:"description"`
-	Domaine     string    `json:"domaine"` // e.g., Programmation, Base de données
-	NiveauCible string    `json:"niveau_cible"`
-	AuteurID    uint      `json:"auteur_id"` // Reference to User (Enseignant)
-	CreatedAt   time.Time `json:"created_at"`
+	ID            uint      `gorm:"primaryKey" json:"id"`
+	Titre         string    `json:"titre"`
+	Description   string    `json:"description"`
+	Domaine       string    `json:"domaine"` // e.g., Programmation, Base de données
+	NiveauCible   string    `json:"niveau_cible"`
+	SeuilReussite int       `json:"seuil_reussite" gorm:"default:60"` // Seuil de maîtrise spécifique au test (%)
+	AuteurID      uint      `json:"auteur_id"` // Reference to User (Enseignant)
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 // Question represents a question inside a TestNiveau
